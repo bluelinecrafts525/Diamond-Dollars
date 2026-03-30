@@ -255,11 +255,16 @@
           <option value="nike|50">✔️ Nike Hoodie / Joggers — $50 (100 💎)</option>
           <option value="waterbottle|25">💧 40oz Water Bottle — $25 (50 💎)</option>
           <option value="giftcard|25">🎁 Gift Card $25 — $25 (50 💎)</option>
-          <option value="giftcard|50">🎁 Gift Card $50 — $50 (100 💎)</option>
-          <option value="giftcard|75">🎁 Gift Card $75 — $75 (150 💎)</option>
-          <option value="giftcard|100">🎁 Gift Card $100 — $100 (200 💎)</option>
-          <option value="pizza|100">🍕 Pizza Party (Team) — $100 (200 💎)</option>
+          <option value="pizza|200">🍕 Pizza Party (Team Pool) — $200 (400 💎)</option>
         </select>
+      </div>
+      <div id="pizza-pool-input" style="display:none;margin-top:0.5rem;background:#1a0a1a;border:1px solid #f87171;border-radius:6px;padding:0.6rem 0.75rem;">
+        <div style="font-size:0.72rem;color:#f87171;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;">🍕 Pizza Pool Contribution</div>
+        <div style="font-size:0.8rem;color:#e8e0d0;margin-bottom:0.5rem;">Pool total: <span id="pizza-pool-total" style="color:#fbbf24;font-weight:bold;">0💎 of 400💎</span></div>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <input type="number" id="pizza-contrib-amt" placeholder="💎 amount" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#e8e0d0;border-radius:4px;padding:0.45rem 0.6rem;font-size:0.85rem;font-family:Georgia,serif;" />
+          <button class="g-btn" onclick="logPizzaContrib()">Add</button>
+        </div>
       </div>
       <div id="redeem-cost-display" style="display:none;margin-top:0.5rem;background:#1a1a00;border:1px solid #fbbf24;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.85rem;color:#fbbf24;display:none;">
       </div>
@@ -405,18 +410,62 @@ const REDEEM_ITEMS = {
   nike:        { label:"Nike Hoodie / Joggers",      price:50  },
   waterbottle: { label:"40oz Water Bottle",          price:25  },
   giftcard:    { label:"Gift Card",                  price:null },
-  pizza:       { label:"Pizza Party (Team)",         price:100 },
+  pizza:       { label:"Pizza Party (Team Pool)",    price:200 },
 };
 
 function updateRedeemCost() {
   const val = document.getElementById("redeem-item").value;
   const display = document.getElementById("redeem-cost-display");
-  if (!val) { display.style.display = "none"; return; }
+  const pizzaUI = document.getElementById("pizza-pool-input");
+  const logBtn  = document.querySelector("#view-redeem .g-btn[onclick='logRedemption()']");
+  if (!val) {
+    display.style.display = "none";
+    pizzaUI.style.display = "none";
+    if (logBtn) logBtn.style.display = "block";
+    return;
+  }
   const parts = val.split("|");
+  const itemKey = parts[0];
   const price = parseFloat(parts[1]);
   const dd    = price / 0.50;
-  display.style.display = "block";
-  display.textContent = "Cost: $" + price.toFixed(2) + " = " + dd + " 💎 Diamond Dollars";
+  if (itemKey === "pizza") {
+    display.style.display = "none";
+    pizzaUI.style.display = "block";
+    if (logBtn) logBtn.style.display = "none";
+    updatePizzaPoolDisplay();
+  } else {
+    pizzaUI.style.display = "none";
+    if (logBtn) logBtn.style.display = "block";
+    display.style.display = "block";
+    display.textContent = "Cost: $" + price.toFixed(2) + " = " + dd + " 💎 Diamond Dollars";
+  }
+}
+
+function updatePizzaPoolDisplay() {
+  const contributed = state.redemptions
+    .filter(r => r.type === "Pizza Pool")
+    .reduce((s, r) => s + r.dd, 0);
+  document.getElementById("pizza-pool-total").textContent =
+    contributed.toFixed(1) + "💎 of 400💎 ($" + (contributed * 0.5).toFixed(2) + " of $200)";
+}
+
+function logPizzaContrib() {
+  const player = document.getElementById("redeem-player").value;
+  const amt    = parseFloat(document.getElementById("pizza-contrib-amt").value);
+  if (!player) { showToast("Select a player"); return; }
+  if (!amt || amt <= 0) { showToast("Enter a 💎 amount"); return; }
+  if (state.seasonTotals[player] < amt) {
+    showToast("Not enough 💎 — " + player + " has " + state.seasonTotals[player]);
+    return;
+  }
+  const entry = { id: Date.now(), player, type: "Pizza Pool", amount: amt * 0.5, dd: amt, date: new Date().toLocaleDateString() };
+  state.redemptions.unshift(entry);
+  state.seasonTotals[player] = Math.round((state.seasonTotals[player] - amt) * 100) / 100;
+  document.getElementById("pizza-contrib-amt").value = "";
+  save();
+  renderAll();
+  updatePizzaPoolDisplay();
+  showToast("-" + amt + "💎 pizza contribution for " + player);
 }
 
 function logRedemption() {
@@ -607,8 +656,9 @@ function renderRedeem() {
   }
   container.innerHTML = state.redemptions.map(r => {
     const dd = r.dd !== undefined ? r.dd : r.amount;
+    const icon = r.type === "Pizza Pool" ? "🍕" : "🎁";
     return '<div class="log-row">' +
-      '<span style="font-size:0.95rem;min-width:1rem">🎁</span>' +
+      '<span style="font-size:0.95rem;min-width:1rem">'+icon+'</span>' +
       '<span class="log-player">'+r.player+'</span>' +
       '<span class="log-label">'+r.type+'</span>' +
       '<span class="log-red">-'+dd+'💎</span>' +
@@ -616,6 +666,7 @@ function renderRedeem() {
       '<span class="log-x" onclick="removeRedemption('+r.id+')">✕</span>' +
     '</div>';
   }).join("");
+  updatePizzaPoolDisplay();
 }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
