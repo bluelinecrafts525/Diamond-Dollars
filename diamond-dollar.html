@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>💎 Diamond Dollar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d0d; color: #e8e0d0; font-family: Georgia, serif; min-height: 100vh; }
+  button, select, input { font-family: Georgia, serif; }
+
+  #header {
+    background: linear-gradient(135deg, #1a1a1a, #0d1f0d);
+    border-bottom: 2px solid #4ade80;
+    padding: 0.7rem 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  #header-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;
+  }
+  #title { font-size: 1.15rem; font-weight: bold; color: #4ade80; text-shadow: 0 0 18px rgba(74,222,128,0.4); }
+  #game-select {
+    background: #1a1a1a; border: 1px solid #333; color: #e8e0d0;
+    border-radius: 4px; padding: 0.28rem 0.45rem; font-size: 0.78rem; font-family: Georgia, serif;
+  }
+  #nav { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .nav-btn {
+    background: transparent; color: #4ade80; border: 1px solid #4ade80;
+    border-radius: 4px; padding: 0.28rem 0.55rem; cursor: pointer; font-size: 0.72rem; font-family: Georgia, serif;
+  }
+  .nav-btn.active { background: #4ade80; color: #0d0d0d; font-weight: bold; }
+
+  #body { padding: 0.7rem; max-width: 680px; margin: 0 auto; }
+  .card { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 0.8rem; margin-bottom: 0.7rem; }
+  .lbl { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: #555; margin-bottom: 0.45rem; }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; }
+  .empty { color: #555; font-size: 0.8rem; text-align: center; padding: 0.65rem 0; font-style: italic; }
+
+  /* Players */
+  #player-grid { display: flex; flex-wrap: wrap; gap: 0.38rem; }
+  .player-chip {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: #1a1a1a; border: 1.5px solid #2a2a2a;
+    border-radius: 20px; padding: 0.28rem 0.6rem; cursor: pointer; font-size: 0.82rem;
+  }
+  .player-chip.selected { background: #1a3a1a; border-color: #4ade80; }
+  .chip-name { color: #e8e0d0; }
+  .player-chip.selected .chip-name { color: #4ade80; font-weight: bold; }
+  .chip-val { color: #fbbf24; font-size: 0.72rem; font-weight: bold; }
+
+  /* Reward tabs */
+  #reward-tabs { display: flex; border-radius: 5px; overflow: hidden; border: 1px solid #2a2a2a; margin-bottom: 0.6rem; }
+  .rtab {
+    flex: 1; padding: 0.42rem; text-align: center; cursor: pointer;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    background: #141414; color: #444; font-weight: normal;
+    border: none; border-right: 1px solid #2a2a2a; font-family: Georgia, serif;
+  }
+  .rtab.active-offense { background: #1a3a1a; color: #4ade80; font-weight: bold; }
+  .rtab.active-defense { background: #1a1a3a; color: #60a5fa; font-weight: bold; }
+  .rtab.active-bonus   { background: #2a1a1a; color: #fbbf24; font-weight: bold; }
+
+  /* Reward grid */
+  #reward-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.38rem; }
+  .reward-btn {
+    background: #1a1a1a; border: 1px solid #1f1f1f; border-radius: 6px;
+    padding: 0.5rem 0.28rem; cursor: pointer; text-align: center; color: #e8e0d0;
+    font-family: Georgia, serif; display: flex; flex-direction: column;
+    align-items: center; gap: 0.18rem; opacity: 0.4;
+  }
+  .reward-btn.enabled { opacity: 1; }
+  .reward-btn.offense { border-color: #1a3a1a; }
+  .reward-btn.defense { border-color: #1a1a3a; }
+  .reward-btn.bonus   { border-color: #2a1a1a; }
+  .r-icon { font-size: 1.05rem; }
+  .r-label { font-size: 0.62rem; color: #e8e0d0; line-height: 1.2; font-weight: bold; }
+  .r-val-offense { font-size: 0.78rem; font-weight: bold; color: #4ade80; }
+  .r-val-defense { font-size: 0.78rem; font-weight: bold; color: #60a5fa; }
+  .r-val-bonus   { font-size: 0.78rem; font-weight: bold; color: #fbbf24; }
+
+  /* Undo */
+  #undo-btn {
+    background: #2a1a00; border: 1px solid #fbbf24; color: #fbbf24;
+    border-radius: 4px; padding: 0.25rem 0.6rem; cursor: pointer; font-size: 0.7rem; font-family: Georgia, serif;
+    display: none;
+  }
+
+  /* Leaderboard rows */
+  .b-row {
+    display: flex; align-items: center; gap: 0.55rem;
+    padding: 0.5rem 0.6rem; border-radius: 6px;
+    background: #141414; margin-bottom: 0.32rem; border: 1px solid #2a2a2a;
+  }
+  .b-row.rank0 { background: #1a2a0a; border-color: #4ade80; }
+  .b-row.rank1 { background: #1a1a2a; }
+  .b-rank { font-size: 0.82rem; min-width: 1.3rem; text-align: center; color: #555; }
+  .b-row.rank0 .b-rank { font-size: 1.05rem; color: #fbbf24; }
+  .b-name { font-size: 0.88rem; color: #e8e0d0; }
+  .b-row.rank0 .b-name { font-size: 0.95rem; font-weight: bold; }
+  .b-bar-wrap { flex: 1; }
+  .b-bar { height: 3px; background: #2a2a2a; border-radius: 2px; margin-top: 0.22rem; }
+  .b-row.rank0 .b-bar { background: #4ade80; }
+  .b-row.rank1 .b-bar { background: #60a5fa; }
+  .b-val { font-size: 0.88rem; font-weight: bold; color: #e8e0d0; }
+  .b-row.rank0 .b-val { font-size: 0.95rem; color: #fbbf24; }
+  .pool-total { text-align: right; font-size: 0.75rem; color: #555; margin-top: 0.45rem; }
+  .pool-total span { color: #fbbf24; }
+
+  /* Log rows */
+  .log-row {
+    display: flex; align-items: center; gap: 0.38rem;
+    padding: 0.32rem 0; border-bottom: 1px solid #1a1a1a; font-size: 0.8rem;
+  }
+  .log-player { color: #4ade80; font-weight: bold; min-width: 68px; }
+  .log-label  { flex: 1; color: #e8e0d0; }
+  .log-val    { color: #fbbf24; font-weight: bold; min-width: 34px; text-align: right; }
+  .log-red    { color: #f87171; font-weight: bold; min-width: 34px; text-align: right; }
+  .log-time   { color: #444; font-size: 0.7rem; min-width: 40px; text-align: right; }
+  .log-x      { color: #555; cursor: pointer; margin-left: 0.18rem; }
+
+  /* Buttons */
+  .p-btn {
+    background: transparent; border: 1px solid #4ade80; color: #4ade80;
+    border-radius: 4px; padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.72rem; font-family: Georgia, serif;
+  }
+  .r-btn {
+    background: transparent; border: 1px solid #c00; color: #c00;
+    border-radius: 4px; padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.72rem; font-family: Georgia, serif;
+  }
+  .g-btn {
+    background: #4ade80; border: 1px solid #4ade80; color: #0d0d0d;
+    border-radius: 4px; padding: 0.45rem 0.8rem; cursor: pointer; font-size: 0.72rem;
+    font-family: Georgia, serif; font-weight: bold;
+  }
+  .conf-box {
+    background: #1a0a0a; border: 1px solid #c00; border-radius: 6px;
+    padding: 0.65rem; margin-bottom: 0.65rem; font-size: 0.82rem;
+  }
+
+  /* Redeem */
+  .sel-full {
+    background: #1a1a1a; border: 1px solid #333; color: #e8e0d0;
+    border-radius: 4px; padding: 0.45rem 0.6rem; font-size: 0.85rem;
+    font-family: Georgia, serif; width: 100%;
+  }
+  .redeem-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .redeem-row select, .redeem-row input {
+    flex: 1; background: #1a1a1a; border: 1px solid #333; color: #e8e0d0;
+    border-radius: 4px; padding: 0.45rem 0.6rem; font-size: 0.85rem; font-family: Georgia, serif;
+  }
+  .redeem-divider { border-top: 1px solid #2a2a2a; padding-top: 0.6rem; margin-top: 0.85rem; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 1.1rem; left: 50%; transform: translateX(-50%);
+    background: #1a3a1a; border: 1px solid #4ade80; color: #4ade80;
+    border-radius: 20px; padding: 0.42rem 1rem; font-size: 0.82rem;
+    font-weight: bold; z-index: 999; pointer-events: none; white-space: nowrap;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-top">
+    <div id="title">💎 Diamond Dollar</div>
+    <select id="game-select"></select>
+  </div>
+  <div id="nav">
+    <button class="nav-btn active" data-view="tracker">Tracker</button>
+    <button class="nav-btn" data-view="game">Game Board</button>
+    <button class="nav-btn" data-view="season">Season</button>
+    <button class="nav-btn" data-view="log">Log</button>
+    <button class="nav-btn" data-view="redeem">Redeem</button>
+  </div>
+</div>
+
+<div id="body">
+
+  <!-- TRACKER -->
+  <div id="view-tracker">
+    <div class="card">
+      <div class="lbl" id="player-label">Select Player</div>
+      <div id="player-grid"></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="lbl" id="reward-label">Tap a player above, then a reward</div>
+        <button id="undo-btn" onclick="undo()">↩ Undo</button>
+      </div>
+      <div id="reward-tabs">
+        <button class="rtab active-offense" data-tab="offense">OFFENSE</button>
+        <button class="rtab" data-tab="defense">DEFENSE</button>
+        <button class="rtab" data-tab="bonus">BONUS</button>
+      </div>
+      <div id="reward-grid"></div>
+    </div>
+  </div>
+
+  <!-- GAME BOARD -->
+  <div id="view-game" style="display:none">
+    <div class="card">
+      <div class="row">
+        <div class="lbl" id="game-board-label">Game 1</div>
+        <button class="p-btn" onclick="printBoard('game')">🖨 Print</button>
+      </div>
+      <div id="game-board-rows"></div>
+      <div class="pool-total">Game pool: <span id="game-pool">$0.00</span></div>
+    </div>
+  </div>
+
+  <!-- SEASON -->
+  <div id="view-season" style="display:none">
+    <div class="card">
+      <div class="row">
+        <div class="lbl">Season — Games 1–10</div>
+        <div style="display:flex;gap:0.35rem">
+          <button class="p-btn" onclick="printBoard('season')">🖨 Print</button>
+          <button class="r-btn" onclick="showResetConfirm()">↺ Reset</button>
+        </div>
+      </div>
+      <div id="reset-confirm" class="conf-box" style="display:none">
+        ⚠️ This will erase all games and season data. Are you sure?
+        <div style="display:flex;gap:0.45rem;margin-top:0.45rem">
+          <button class="r-btn" style="padding:0.28rem 0.7rem" onclick="resetAll()">Yes, reset all</button>
+          <button class="p-btn" style="padding:0.28rem 0.7rem" onclick="hideResetConfirm()">Cancel</button>
+        </div>
+      </div>
+      <div id="season-board-rows"></div>
+      <div class="pool-total">Season pool: <span id="season-pool">$0.00</span></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="view-log" style="display:none">
+    <div class="card">
+      <div class="lbl" id="log-label">Game 1 — Reward Log</div>
+      <div id="log-rows"></div>
+    </div>
+  </div>
+
+  <!-- REDEEM -->
+  <div id="view-redeem" style="display:none">
+    <div class="card">
+      <div class="lbl">Log Redemption</div>
+      <select class="sel-full" id="redeem-player">
+        <option value="">— Select Player —</option>
+      </select>
+      <div style="margin-top:0.5rem">
+        <select class="sel-full" id="redeem-item" onchange="updateRedeemCost()">
+          <option value="">— Select Item —</option>
+          <option value="tshirt|15">👕 T-Shirt — $15 (30 💎)</option>
+          <option value="hoodie|30">🧥 Hoodie — $30 (60 💎)</option>
+          <option value="nike|50">✔️ Nike Hoodie / Joggers — $50 (100 💎)</option>
+          <option value="waterbottle|25">💧 40oz Water Bottle — $25 (50 💎)</option>
+          <option value="giftcard|25">🎁 Gift Card $25 — $25 (50 💎)</option>
+          <option value="giftcard|50">🎁 Gift Card $50 — $50 (100 💎)</option>
+          <option value="giftcard|75">🎁 Gift Card $75 — $75 (150 💎)</option>
+          <option value="giftcard|100">🎁 Gift Card $100 — $100 (200 💎)</option>
+          <option value="pizza|100">🍕 Pizza Party (Team) — $100 (200 💎)</option>
+        </select>
+      </div>
+      <div id="redeem-cost-display" style="display:none;margin-top:0.5rem;background:#1a1a00;border:1px solid #fbbf24;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.85rem;color:#fbbf24;display:none;">
+      </div>
+      <div style="margin-top:0.5rem">
+        <button class="g-btn" style="width:100%" onclick="logRedemption()">Log Redemption</button>
+      </div>
+      <div class="redeem-divider">
+        <div class="lbl" style="margin-bottom:0.5rem">Redemption History</div>
+        <div id="redeem-rows"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const ROSTER = ["Reese","Brenna","Brynn","Khloe","Maryam","Jossy","Marie","Rory","Grace","Briana","Willow","Issey","Abby"];
+
+const REWARDS = {
+  offense: [
+    { id:"run",      label:"Run Scored",       value:1,   icon:"🏃"  },
+    { id:"double",   label:"Double",            value:2,   icon:"🏎️" },
+    { id:"triple",   label:"Triple",            value:5,   icon:"🏍️" },
+    { id:"hr_ip",    label:"In-Park HR",        value:10,  icon:"💨"  },
+    { id:"hr_otf",   label:"Over-Fence HR",     value:20,  icon:"💣"  },
+    { id:"walk",     label:"Walk / HBP",        value:0.5, icon:"🚶"  },
+    { id:"sac",      label:"Sac Bunt/Fly",      value:1,   icon:"☠️"  },
+    { id:"rbi",      label:"RBI (per run)",     value:1,   icon:"💥"  },
+    { id:"sb",       label:"Stolen Base",       value:1,   icon:"⚡"  },
+  ],
+  defense: [
+    { id:"out",      label:"Routine Out",       value:0.5, icon:"🧤"  },
+    { id:"catch",    label:"Great Catch",       value:1,   icon:"⭐"  },
+    { id:"dp",       label:"Double Play",       value:2,   icon:"🔁"  },
+    { id:"tp",       label:"Triple Play",       value:5,   icon:"🔱"  },
+    { id:"throw",    label:"Throw Out Runner",  value:2,   icon:"🎯"  },
+    { id:"gend",     label:"Game-Ending Out",   value:2,   icon:"🔒"  },
+  ],
+  bonus: [
+    { id:"potg",     label:"Play of the Game", value:5,   icon:"🏆"  },
+    { id:"mvp",      label:"MVP",              value:10,  icon:"👑"  },
+    { id:"hustle",   label:"Hustle Reward",    value:2,   icon:"🔥"  },
+    { id:"cheer",    label:"Top Cheerleader",  value:5,   icon:"📣"  },
+    { id:"attitude", label:"Positive Attitude",value:1,   icon:"😊"  },
+    { id:"shutout",  label:"Team Shutout",     value:2,   icon:"🛡️" },
+    { id:"gwrp",     label:"Game-Winning Play",value:5,   icon:"🌟"  },
+    { id:"parent",   label:"Positive Parent",  value:2,   icon:"👏"  },
+  ],
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+function freshTotals() { return Object.fromEntries(ROSTER.map(n => [n, 0])); }
+function makeGame(num) { return { num, label:"Game "+num, log:[], totals:freshTotals() }; }
+function allGames()    { return Array.from({length:10}, (_,i) => makeGame(i+1)); }
+
+let state = {
+  games:        allGames(),
+  currentGame:  1,
+  seasonTotals: freshTotals(),
+  redemptions:  [],
+  selPlayer:    null,
+  activeTab:    "offense",
+  lastEntry:    null,
+};
+
+// ─── Persistence ─────────────────────────────────────────────────────────────
+function save() {
+  try {
+    localStorage.setItem("dd-games",       JSON.stringify(state.games));
+    localStorage.setItem("dd-season",      JSON.stringify(state.seasonTotals));
+    localStorage.setItem("dd-current",     String(state.currentGame));
+    localStorage.setItem("dd-redemptions", JSON.stringify(state.redemptions));
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const g = localStorage.getItem("dd-games");
+    const s = localStorage.getItem("dd-season");
+    const c = localStorage.getItem("dd-current");
+    const r = localStorage.getItem("dd-redemptions");
+    if (g) state.games        = JSON.parse(g);
+    if (s) state.seasonTotals = JSON.parse(s);
+    if (c) state.currentGame  = parseInt(c);
+    if (r) state.redemptions  = JSON.parse(r);
+  } catch(e) {}
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 2000);
+}
+
+// ─── Game helpers ─────────────────────────────────────────────────────────────
+function currentGameObj() { return state.games.find(g => g.num === state.currentGame); }
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+function applyReward(reward) {
+  if (!state.selPlayer) { showToast("Select a player first!"); return; }
+  const p = state.selPlayer;
+  const entry = {
+    id: Date.now(), player: p, label: reward.label,
+    value: reward.value, icon: reward.icon,
+    time: new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}),
+  };
+  const g = currentGameObj();
+  g.log.unshift(entry);
+  g.totals[p] = Math.round((g.totals[p] + reward.value) * 100) / 100;
+  state.seasonTotals[p] = Math.round((state.seasonTotals[p] + reward.value) * 100) / 100;
+  state.lastEntry = entry;
+  save();
+  renderAll();
+  showToast("+" + reward.value + " → " + p);
+}
+
+function removeEntry(id) {
+  const g = currentGameObj();
+  const entry = g.log.find(e => e.id === id);
+  if (!entry) return;
+  g.log = g.log.filter(e => e.id !== id);
+  g.totals[entry.player]            = Math.round((g.totals[entry.player]            - entry.value) * 100) / 100;
+  state.seasonTotals[entry.player]  = Math.round((state.seasonTotals[entry.player]  - entry.value) * 100) / 100;
+  save();
+  renderAll();
+}
+
+function undo() {
+  if (!state.lastEntry) return;
+  removeEntry(state.lastEntry.id);
+  state.lastEntry = null;
+  showToast("Undone!");
+}
+
+const REDEEM_ITEMS = {
+  tshirt:      { label:"T-Shirt",                   price:15  },
+  hoodie:      { label:"Hoodie",                    price:30  },
+  nike:        { label:"Nike Hoodie / Joggers",      price:50  },
+  waterbottle: { label:"40oz Water Bottle",          price:25  },
+  giftcard:    { label:"Gift Card",                  price:null },
+  pizza:       { label:"Pizza Party (Team)",         price:100 },
+};
+
+function updateRedeemCost() {
+  const val = document.getElementById("redeem-item").value;
+  const display = document.getElementById("redeem-cost-display");
+  if (!val) { display.style.display = "none"; return; }
+  const parts = val.split("|");
+  const price = parseFloat(parts[1]);
+  const dd    = price / 0.50;
+  display.style.display = "block";
+  display.textContent = "Cost: $" + price.toFixed(2) + " = " + dd + " 💎 Diamond Dollars";
+}
+
+function logRedemption() {
+  const player   = document.getElementById("redeem-player").value;
+  const itemVal  = document.getElementById("redeem-item").value;
+  if (!player)  { showToast("Select a player"); return; }
+  if (!itemVal) { showToast("Select an item"); return; }
+  const parts    = itemVal.split("|");
+  const itemKey  = parts[0];
+  const price    = parseFloat(parts[1]);
+  const dd       = price / 0.50;
+  const itemInfo = REDEEM_ITEMS[itemKey] || { label: itemKey };
+  const label    = itemKey === "giftcard" ? "Gift Card $" + price : itemInfo.label;
+  if (state.seasonTotals[player] < dd) {
+    showToast("Not enough 💎 — needs " + dd + ", has " + state.seasonTotals[player]);
+    return;
+  }
+  const entry = { id: Date.now(), player, type: label, amount: price, dd: dd, date: new Date().toLocaleDateString() };
+  state.redemptions.unshift(entry);
+  state.seasonTotals[player] = Math.round((state.seasonTotals[player] - dd) * 100) / 100;
+  document.getElementById("redeem-item").value = "";
+  document.getElementById("redeem-cost-display").style.display = "none";
+  save();
+  renderAll();
+  showToast("-" + dd + " 💎 redeemed for " + player);
+}
+
+function removeRedemption(id) {
+  const entry = state.redemptions.find(r => r.id === id);
+  if (!entry) return;
+  state.redemptions = state.redemptions.filter(r => r.id !== id);
+  const ddBack = entry.dd !== undefined ? entry.dd : entry.amount;
+  state.seasonTotals[entry.player] = Math.round((state.seasonTotals[entry.player] + ddBack) * 100) / 100;
+  save();
+  renderAll();
+}
+
+function resetAll() {
+  state.games        = allGames();
+  state.seasonTotals = freshTotals();
+  state.redemptions  = [];
+  state.currentGame  = 1;
+  state.selPlayer    = null;
+  state.lastEntry    = null;
+  hideResetConfirm();
+  save();
+  renderAll();
+  showToast("Season reset.");
+}
+
+function showResetConfirm() { document.getElementById("reset-confirm").style.display = "block"; }
+function hideResetConfirm() { document.getElementById("reset-confirm").style.display = "none"; }
+
+// ─── Print ────────────────────────────────────────────────────────────────────
+function printBoard(which) {
+  const totals = which === "season" ? state.seasonTotals : currentGameObj().totals;
+  const title  = which === "season" ? "Season Leaderboard" : currentGameObj().label + " Leaderboard";
+  const sorted = ROSTER.slice().sort((a,b) => totals[b] - totals[a]);
+  const pool   = Object.values(totals).reduce((s,v) => s+v, 0);
+  const rows   = sorted.map((n,i) => "<tr><td>"+(i+1)+"</td><td>"+n+"</td><td>"+totals[n].toFixed(1)+" 💎 ($"+(totals[n]*0.50).toFixed(2)+")</td></tr>").join("");
+  const w = window.open("","_blank");
+  w.document.write("<html><head><title>"+title+"</title><style>body{font-family:monospace;padding:2rem}h1{font-size:1.3rem}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.45rem .9rem;text-align:left}th{background:#f0f0f0}tr:first-child td{font-weight:bold;background:#fffde7}.f{margin-top:1rem;font-size:.8rem;color:#888}</style></head><body><h1>💎 "+title+"</h1><table><thead><tr><th>#</th><th>Player</th><th>💎 (Value)</th></tr></thead><tbody>"+rows+"</tbody></table><div class='f'>Total: "+pool.toFixed(1)+" 💎 | "+new Date().toLocaleDateString()+"</div></body></html>");
+  w.document.close(); w.print();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderGameSelect();
+  renderPlayers();
+  renderRewardGrid();
+  renderGameBoard();
+  renderSeasonBoard();
+  renderLog();
+  renderRedeem();
+}
+
+function renderGameSelect() {
+  const sel = document.getElementById("game-select");
+  sel.innerHTML = state.games.map(g =>
+    '<option value="'+g.num+'"'+(g.num===state.currentGame?" selected":"")+'>'+g.label+'</option>'
+  ).join("");
+}
+
+function renderPlayers() {
+  const g = currentGameObj();
+  document.getElementById("player-label").textContent = "Select Player — " + g.label;
+  const grid = document.getElementById("player-grid");
+  grid.innerHTML = ROSTER.map(n => {
+    const sel = state.selPlayer === n;
+    return '<div class="player-chip'+(sel?" selected":"")+'" onclick="selectPlayer(\''+n+'\')">' +
+      '<span class="chip-name">'+n+'</span>' +
+      '<span class="chip-val">'+g.totals[n].toFixed(1)+'💎</span>' +
+      '</div>';
+  }).join("");
+  document.getElementById("reward-label").textContent =
+    state.selPlayer ? "Rewarding → " + state.selPlayer : "Tap a player above, then a reward";
+  document.getElementById("undo-btn").style.display = state.lastEntry ? "inline-block" : "none";
+}
+
+function selectPlayer(name) {
+  state.selPlayer = state.selPlayer === name ? null : name;
+  renderPlayers();
+  renderRewardGrid();
+}
+
+function renderRewardGrid() {
+  const tab  = state.activeTab;
+  const list = REWARDS[tab];
+  const enabled = !!state.selPlayer;
+  const grid = document.getElementById("reward-grid");
+  grid.innerHTML = list.map((r, i) =>
+    '<button class="reward-btn '+tab+(enabled?" enabled":"")+'" onclick="applyRewardByIndex(\''+tab+'\','+i+')">' +
+      '<span class="r-icon">'+r.icon+'</span>' +
+      '<span class="r-label">'+r.label+'</span>' +
+      '<span class="r-val-'+tab+'">'+r.value+'💎</span>' +
+    '</button>'
+  ).join("");
+}
+
+function applyRewardByIndex(tab, index) {
+  applyReward(REWARDS[tab][index]);
+}
+
+function boardRows(totals, containerId) {
+  const sorted = ROSTER.slice().sort((a,b) => totals[b]-totals[a]);
+  const max    = totals[sorted[0]] || 1;
+  const pool   = Object.values(totals).reduce((s,v)=>s+v,0);
+  const container = document.getElementById(containerId);
+  container.innerHTML = sorted.map((n,i) => {
+    const pct = max > 0 ? (totals[n]/max)*100 : 0;
+    const rankClass = i===0?"rank0":i===1?"rank1":"";
+    const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)+".";
+    return '<div class="b-row '+rankClass+'">' +
+      '<span class="b-rank">'+medal+'</span>' +
+      '<div class="b-bar-wrap"><div class="b-name">'+n+'</div><div class="b-bar" style="width:'+pct+'%"></div></div>' +
+      '<span class="b-val">'+totals[n].toFixed(1)+'💎</span>' +
+      '</div>';
+  }).join("");
+  return pool;
+}
+
+function renderGameBoard() {
+  const g = currentGameObj();
+  document.getElementById("game-board-label").textContent = g.label;
+  const pool = boardRows(g.totals, "game-board-rows");
+  document.getElementById("game-pool").textContent = pool.toFixed(1)+"💎";
+}
+
+function renderSeasonBoard() {
+  const pool = boardRows(state.seasonTotals, "season-board-rows");
+  document.getElementById("season-pool").textContent = pool.toFixed(1)+"💎";
+}
+
+function renderLog() {
+  const g = currentGameObj();
+  document.getElementById("log-label").textContent = g.label + " — Reward Log";
+  const container = document.getElementById("log-rows");
+  if (!g.log || g.log.length === 0) {
+    container.innerHTML = '<div class="empty">No rewards yet this game</div>';
+    return;
+  }
+  container.innerHTML = g.log.map(e =>
+    '<div class="log-row">' +
+      '<span style="font-size:0.95rem;min-width:1rem">'+e.icon+'</span>' +
+      '<span class="log-player">'+e.player+'</span>' +
+      '<span class="log-label">'+e.label+'</span>' +
+      '<span class="log-val">+'+e.value+'💎</span>' +
+      '<span class="log-time">'+e.time+'</span>' +
+      '<span class="log-x" onclick="removeEntry('+e.id+')">✕</span>' +
+    '</div>'
+  ).join("");
+}
+
+function renderRedeem() {
+  const sel = document.getElementById("redeem-player");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select Player —</option>' +
+    ROSTER.map(n => {
+      const dd  = state.seasonTotals[n];
+      const val = (dd * 0.50).toFixed(2);
+      return '<option value="'+n+'"'+(n===cur?" selected":"")+'>'+n+' ('+dd+' 💎 = $'+val+')</option>';
+    }).join("");
+
+  const container = document.getElementById("redeem-rows");
+  if (state.redemptions.length === 0) {
+    container.innerHTML = '<div class="empty">No redemptions yet</div>';
+    return;
+  }
+  container.innerHTML = state.redemptions.map(r => {
+    const dd = r.dd !== undefined ? r.dd : r.amount;
+    return '<div class="log-row">' +
+      '<span style="font-size:0.95rem;min-width:1rem">🎁</span>' +
+      '<span class="log-player">'+r.player+'</span>' +
+      '<span class="log-label">'+r.type+'</span>' +
+      '<span class="log-red">-'+dd+'💎</span>' +
+      '<span class="log-time">'+r.date+'</span>' +
+      '<span class="log-x" onclick="removeRedemption('+r.id+')">✕</span>' +
+    '</div>';
+  }).join("");
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+let currentView = "tracker";
+function switchView(v) {
+  document.getElementById("view-"+currentView).style.display = "none";
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  currentView = v;
+  document.getElementById("view-"+v).style.display = "block";
+  document.querySelector('[data-view="'+v+'"]').classList.add("active");
+}
+
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => switchView(btn.dataset.view));
+});
+
+document.getElementById("game-select").addEventListener("change", function() {
+  state.currentGame = parseInt(this.value);
+  state.selPlayer   = null;
+  state.lastEntry   = null;
+  save();
+  renderAll();
+});
+
+document.querySelectorAll(".rtab").forEach(btn => {
+  btn.addEventListener("click", function() {
+    state.activeTab = this.dataset.tab;
+    document.querySelectorAll(".rtab").forEach(b => b.className = "rtab");
+    this.className = "rtab active-" + state.activeTab;
+    renderRewardGrid();
+  });
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+load();
+renderAll();
+</script>
+</body>
+</html>
