@@ -37,16 +37,16 @@
   .empty { color: #555; font-size: 0.8rem; text-align: center; padding: 0.65rem 0; font-style: italic; }
 
   /* Players */
-  #player-grid { display: flex; flex-wrap: wrap; gap: 0.38rem; }
+  #player-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
   .player-chip {
-    display: flex; align-items: center; gap: 0.3rem;
+    display: flex; align-items: center; justify-content: space-between;
     background: #1a1a1a; border: 1.5px solid #2a2a2a;
-    border-radius: 20px; padding: 0.28rem 0.6rem; cursor: pointer; font-size: 0.82rem;
+    border-radius: 8px; padding: 0.45rem 0.75rem; cursor: pointer; font-size: 0.88rem;
   }
   .player-chip.selected { background: #1a3a1a; border-color: #4ade80; }
-  .chip-name { color: #e8e0d0; }
-  .player-chip.selected .chip-name { color: #4ade80; font-weight: bold; }
-  .chip-val { color: #fbbf24; font-size: 0.72rem; font-weight: bold; }
+  .chip-name { color: #e8e0d0; font-weight: bold; }
+  .player-chip.selected .chip-name { color: #4ade80; }
+  .chip-val { color: #fbbf24; font-size: 0.75rem; font-weight: bold; }
 
   /* Reward tabs */
   #reward-tabs { display: flex; border-radius: 5px; overflow: hidden; border: 1px solid #2a2a2a; margin-bottom: 0.6rem; }
@@ -287,23 +287,29 @@ const ROSTER = ["Reese","Brenna","Brynn","Khloe","Maryam","Jossy","Marie","Rory"
 
 const REWARDS = {
   offense: [
-    { id:"run",      label:"Run Scored",       value:1,   icon:"🏃"  },
-    { id:"double",   label:"Double",            value:2,   icon:"🏎️" },
-    { id:"triple",   label:"Triple",            value:5,   icon:"🏍️" },
-    { id:"hr_ip",    label:"In-Park HR",        value:10,  icon:"💨"  },
-    { id:"hr_otf",   label:"Over-Fence HR",     value:20,  icon:"💣"  },
-    { id:"walk",     label:"Walk / HBP",        value:0.5, icon:"🚶"  },
-    { id:"sac",      label:"Sac Bunt/Fly",      value:1,   icon:"☠️"  },
-    { id:"rbi",      label:"RBI (per run)",     value:1,   icon:"💥"  },
-    { id:"sb",       label:"Stolen Base",       value:1,   icon:"⚡"  },
+    { id:"run",      label:"Run Scored (excl. walked in)", value:1,   icon:"🏃"  },
+    { id:"hit",      label:"Base Hit",                     value:0.5, icon:"⚾"  },
+    { id:"double",   label:"Double",                       value:2,   icon:"🏎️" },
+    { id:"triple",   label:"Triple",                       value:5,   icon:"🏍️" },
+    { id:"hr_ip",    label:"In-Park HR",                   value:10,  icon:"💨"  },
+    { id:"hr_otf",   label:"Over-Fence HR",                value:20,  icon:"💣"  },
+    { id:"walk",     label:"Walk / HBP",                   value:0.5, icon:"🚶"  },
+    { id:"walkplus", label:"Continuous Walk",            value:1.5, icon:"🚀"  },
+    { id:"sac",      label:"Sac Bunt/Fly",                 value:1,   icon:"☠️"  },
+    { id:"rbi",      label:"RBI (excl. walked in)",        value:1,   icon:"💥"  },
+    { id:"sb",       label:"Stolen Base",                  value:1,   icon:"⚡"  },
+    { id:"sh",       label:"Stole Home",                   value:2,   icon:"🏠"  },
   ],
   defense: [
-    { id:"out",      label:"Routine Out",       value:0.5, icon:"🧤"  },
-    { id:"catch",    label:"Great Catch",       value:1,   icon:"⭐"  },
-    { id:"dp",       label:"Double Play",       value:2,   icon:"🔁"  },
-    { id:"tp",       label:"Triple Play",       value:5,   icon:"🔱"  },
-    { id:"throw",    label:"Throw Out Runner",  value:2,   icon:"🎯"  },
-    { id:"gend",     label:"Game-Ending Out",   value:2,   icon:"🔒"  },
+    { id:"out",      label:"Routine Out",         value:0.5, icon:"🧤"  },
+    { id:"catch",    label:"Great Catch",          value:1,   icon:"⭐"  },
+    { id:"dive",     label:"Diving Catch/Stop",    value:2,   icon:"🤸"  },
+    { id:"k",        label:"Strikeout",            value:1,   icon:"🔥"  },
+    { id:"dp",       label:"Double Play",          value:2,   icon:"🔁"  },
+    { id:"tp",       label:"Triple Play",          value:5,   icon:"🔱"  },
+    { id:"throw",    label:"Throw Out Runner",     value:1,   icon:"🎯"  },
+    { id:"pickoff",  label:"Pick Off (per player)",value:2,   icon:"👀"  },
+    { id:"gend",     label:"Game-Ending Out",      value:2,   icon:"🔒"  },
   ],
   bonus: [
     { id:"potg",     label:"Play of the Game", value:5,   icon:"🏆"  },
@@ -553,7 +559,8 @@ function renderPlayers() {
   const g = currentGameObj();
   document.getElementById("player-label").textContent = "Select Player — " + g.label;
   const grid = document.getElementById("player-grid");
-  grid.innerHTML = ROSTER.map(n => {
+  const sorted = ROSTER.slice().sort();
+  grid.innerHTML = sorted.map(n => {
     const sel = state.selPlayer === n;
     return '<div class="player-chip'+(sel?" selected":"")+'" onclick="selectPlayer(\''+n+'\')">' +
       '<span class="chip-name">'+n+'</span>' +
